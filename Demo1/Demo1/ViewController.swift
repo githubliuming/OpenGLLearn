@@ -13,8 +13,7 @@ class ViewController: UIViewController {
     
     private var context:EAGLContext = EAGLContext.init(api:.openGLES2)!;
     private var effect:GLKBaseEffect = GLKBaseEffect.init();
-    var count:GLuint = 0;
-    
+    private var buffer:GLuint = 0;
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -56,14 +55,14 @@ class ViewController: UIViewController {
             0.0, -1.0, 0.0,   0.5, 1.0, //左上
             0.0, 1.0, 0.0,   0.5, 0.0, //左下
         ];
-        count = GLuint(vertext.count);
-        var buffer:GLuint = 0;
+        //生成新缓存对象。并返回缓存buffer id
         glGenBuffers(1, &buffer);
+        //将申请的缓存对象绑定到GL_ARRAY_BUFFER中
         glBindBuffer(GLenum(GL_ARRAY_BUFFER), buffer);
-        //提交顶点数据
+        //将顶点数据拷贝到缓存对象中
         glBufferData(GLenum(GL_ARRAY_BUFFER), GLsizeiptr(MemoryLayout<GLfloat>.size * vertext.count) , vertext, GLenum(GL_STATIC_DRAW));
         
-        //顶点
+        //启用顶点
         glEnableVertexAttribArray(GLuint(GLKVertexAttrib.position.rawValue));
         glVertexAttribPointer(GLuint(GLKVertexAttrib.position.rawValue),
                               3,
@@ -71,6 +70,7 @@ class ViewController: UIViewController {
                               GLboolean(GL_FALSE),
                               GLsizei(MemoryLayout<GLfloat>.size * 5), nil);
         
+        //启用纹理
         let offset :GLsizeiptr = MemoryLayout<GLfloat>.size * 3;
         glEnableVertexAttribArray(GLuint(GLKVertexAttrib.texCoord0.rawValue));
         glVertexAttribPointer(GLuint(GLKVertexAttrib.texCoord0.rawValue),
@@ -103,13 +103,18 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    deinit {
+        
+        if  buffer != 0 {
+            EAGLContext.setCurrent(nil);
+        }
+    }
 }
 
 extension ViewController:GLKViewDelegate {
     func glkView(_ view: GLKView, drawIn rect: CGRect) {
         glClearColor(0.1, 0.5, 0.0, 1);
         glClear(GLbitfield(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        
         effect.prepareToDraw();
         glDrawArrays(GLenum(GL_TRIANGLES), 0, 12);
         
